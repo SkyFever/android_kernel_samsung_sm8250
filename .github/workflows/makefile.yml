@@ -1,0 +1,80 @@
+name: Build f2q kernel (GCC, sec)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. f2q-2026-02-14)"
+        required: true
+      name:
+        description: "Release name"
+        required: true
+        default: "f2q kernel build (sec)"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc bison build-essential ccache flex gcc-aarch64-linux-gnu \
+            gcc-arm-linux-gnueabihf libssl-dev make python3 unzip zlib1g-dev
+
+      - name: Configure (kona-sec-perf + f2q fragment)
+        env:
+          ARCH: arm64
+          SUBARCH: arm64
+          CROSS_COMPILE: aarch64-linux-gnu-
+          CROSS_COMPILE_COMPAT: arm-linux-gnueabihf-
+          PROJECT_NAME: f2q
+        run: |
+          set -e
+          mkdir -p out
+          make O=out vendor/kona-sec-perf_defconfig
+          scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/samsung/f2q.config
+          make O=out olddefconfig
+
+      - name: Build kernel + dtbo
+        env:
+          ARCH: arm64
+          SUBARCH: arm64
+          CROSS_COMPILE: aarch64-linux-gnu-
+          CROSS_COMPILE_COMPAT: arm-linux-gnueabihf-
+          PROJECT_NAME: f2q
+        run: |
+          set -e
+          make O=out -j"$(nproc)" Image.gz-dtb dtbo.img
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p dist
+          if [ -f out/arch/arm64/boot/Image.gz-dtb ]; then
+            cp -v out/arch/arm64/boot/Image.gz-dtb dist/
+          fi
+          if [ -f out/arch/arm64/boot/dtbo.img ]; then
+            cp -v out/arch/arm64/boot/dtbo.img dist/
+          fi
+          if [ -f out/arch/arm64/boot/Image ]; then
+            cp -v out/arch/arm64/boot/Image dist/
+          fi
+          ls -lah dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: ${{ inputs.name }}
+          files: |
+            dist/*
