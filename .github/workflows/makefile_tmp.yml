@@ -1,0 +1,21 @@
+name: Makefile CI
+
+on:
+  push:
+    branches: [ "lineage-22.2" ]
+  pull_request:
+    branches: [ "lineage-22.2" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: grep dtbo
+      run: make O=out help | grep -i dtbo
+
+    - name: grep dtb
+      run: make O=out help | grep -i dtb
