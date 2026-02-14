@@ -19,3 +19,12 @@ jobs:
 
     - name: grep dtb
       run: make O=out help | grep -i dtb || true
+
+    - name: sed 1,200p
+      run: make O=out help | sed -n '1,200p' || true
+      
+    - name: grep dtbo head -n 50
+      run: grep -RIn "dtbo" arch/arm64/boot/dts | head -n 50 || true
+      
+    - name: grep dtb head -n 50
+      run: grep -RIn "dtb" arch/arm64/boot/dts | head -n 50 || true
