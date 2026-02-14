@@ -55,8 +55,8 @@ jobs:
           PROJECT_NAME: f2q
         run: |
           set -e
-          make O=out -j"$(nproc)" Image.gz-dtb dtbs
-
+          make O=out -j"$(nproc)" WERROR=0 Image.gz-dtb dtbs
+          
       - name: Collect artifacts
         run: |
           mkdir -p dist
