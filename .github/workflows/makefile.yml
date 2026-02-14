@@ -46,7 +46,7 @@ jobs:
           scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/samsung/f2q.config
           make O=out olddefconfig
 
-      - name: Build kernel + dtbo
+      - name: Build kernel + dtbs
         env:
           ARCH: arm64
           SUBARCH: arm64
@@ -55,7 +55,7 @@ jobs:
           PROJECT_NAME: f2q
         run: |
           set -e
-          make O=out -j"$(nproc)" Image.gz-dtb dtbo.img
+          make O=out -j"$(nproc)" Image.gz-dtb dtbs
 
       - name: Collect artifacts
         run: |
@@ -63,12 +63,10 @@ jobs:
           if [ -f out/arch/arm64/boot/Image.gz-dtb ]; then
             cp -v out/arch/arm64/boot/Image.gz-dtb dist/
           fi
-          if [ -f out/arch/arm64/boot/dtbo.img ]; then
-            cp -v out/arch/arm64/boot/dtbo.img dist/
-          fi
           if [ -f out/arch/arm64/boot/Image ]; then
             cp -v out/arch/arm64/boot/Image dist/
           fi
+          find out/arch/arm64/boot/dts -name "*.dtbo" -exec cp -v {} dist/ \;
           ls -lah dist
 
       - name: Create GitHub Release
